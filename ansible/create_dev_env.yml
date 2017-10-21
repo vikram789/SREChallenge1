@@ -1,0 +1,52 @@
+---
+- name: Create DEV env ALB, LC, etc
+  hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - "group_vars/vars.yml"
+
+  tasks:
+
+  - ec2_elb_lb:
+     name: dev-lb
+     state: present
+     region: "{{ region }}"
+     zones:
+      - us-east-1a
+     listeners:
+      - protocol: http # options are http, https, ssl, tcp
+        load_balancer_port: 80
+        instance_port: 80
+        proxy_protocol: True
+      - protocol: https
+        load_balancer_port: 443
+        instance_protocol: http # optional, defaults to value of protocol setting
+        instance_port: 80
+        # ssl certificate required for https or ssl
+        ssl_certificate_id: "arn:aws:acm:us-east-1:862454798140:certificate/e1382f43-236d-4524-afb4-f65347f9097e"
+ 
+  - name: Create Launch Configuration
+    ec2_lc:
+     name: dev_lc
+     image_id: "{{ ec2_image }}"
+#    key_name: mykey
+     region: "{{ region }}"
+     security_groups: "{{ sg_1 }}"
+     instance_type: "{{ ec2_instance_type }}"
+     assign_public_ip: yes
+
+  - name: Create Auto Scaling Group
+    ec2_asg:
+     name: dev_asg
+     launch_config_name: dev_lc
+     health_check_period: 60
+     health_check_type: ELB
+     replace_all_instances: yes
+     min_size: 1 
+     max_size: 2 
+     desired_capacity: 1
+     load_balancers:
+       - dev-lb 
+     region: "{{ region }}"
+     vpc_zone_identifier: "{{ ec2_subnet_ids }}"
+
