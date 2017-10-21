@@ -50,7 +50,7 @@
     yum: name=httpd.x86_64 state=latest
 
   - name: start the httpd service
-    service: name=httpd state=started
+    service: name=httpd state=started enabled=yes
 
   - name: Create user
     user: name=vsaraf00c group=ec2-user
