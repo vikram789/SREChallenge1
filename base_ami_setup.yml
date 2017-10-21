@@ -32,15 +32,15 @@
     register: temp_ec2    
 
   - name: display ec2
-    debug: msg= "Newly created ec2 - {{ temp_ec2.instances[0]['private_ip_address'] }} "
+    debug: msg="Newly created ec2 - {{ temp_ec2.instances[0]['private_ip_address'] }}"
 
-#  - pause: seconds=180
+#  - pause: seconds=120
 
 #  - name: Wait for SSH to come up on " {{ temp_ec2.instances[0]['private_ip'] }} "
 #    wait_for: host= "{{ temp_ec2.instances[0]['private_ip'] }}" port=22 delay=60 timeout=320 state=started
 
   - name: Add all instance private  IPs to host group
-    add_host: name= "{{ temp_ec2.instances[0]['private_ip_address'] }}" groups=webserver
+    add_host: name="{{ temp_ec2.instances[0]['private_ip_address'] }}" groups=webserver
 
 # --------------------------------
 # Play 2 - install pre-reqs to EC2
@@ -50,9 +50,7 @@
   become: true
   tasks:
   - name: install the latest version of Apache
-    yum:
-    name: httpd
-    state: latest
+    yum: name=httpd.x86_64 state=latest
 
   - name: start the httpd service
     service: name=httpd state=started
