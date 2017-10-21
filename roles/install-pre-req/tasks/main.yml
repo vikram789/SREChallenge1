@@ -1,0 +1,19 @@
+---
+- name: install the latest version of Apache
+  yum:
+    name: httpd
+    state: latest
+    become: true
+
+
+- name: start the httpd service
+  service: name=httpd state=started
+  become: true
+
+# Add the user 'johnd' with a specific uid and a primary group of 'admin'
+- user:
+    name: vsaraf00c
+    comment: "Vikrm Saraf"
+    uid: 1040
+    group: ec2-user
+    become: true
