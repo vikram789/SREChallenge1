@@ -22,19 +22,25 @@
      exact_count: 1
      count_tag:
       Name: "{{ resource_name }}"
-    register: temp_ec2
+#    register: temp_ec2
 
-    
+  - name: Search ec2
+    ec2_remote_facts:
+     filters:
+      "tag:Name": "{{resource_name}}"
+     region: "{{ region }}"
+    register: temp_ec2    
+
   - name: display ec2
-    debug: msg= "Newly created ec2 - {{ temp_ec2 }} "
+    debug: msg= "Newly created ec2 - {{ temp_ec2.instances[0]['private_ip_address'] }} "
 
-  - pause: seconds=180
+#  - pause: seconds=180
 
 #  - name: Wait for SSH to come up on " {{ temp_ec2.instances[0]['private_ip'] }} "
 #    wait_for: host= "{{ temp_ec2.instances[0]['private_ip'] }}" port=22 delay=60 timeout=320 state=started
 
   - name: Add all instance private  IPs to host group
-    add_host: name= "{{ temp_ec2.instances[0]['private_ip'] }}" groups=webserver
+    add_host: name= "{{ temp_ec2.instances[0]['private_ip_address'] }}" groups=webserver
 
 # --------------------------------
 # Play 2 - install pre-reqs to EC2
