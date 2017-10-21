@@ -23,7 +23,7 @@
      count_tag:
       Name: "{{ resource_name }}"
 #    register: temp_ec2
-
+# Added this section so that rerunning failed attempt works without duplicating
   - name: Search ec2
     ec2_remote_facts:
      filters:
@@ -62,6 +62,22 @@
 #------------------------------------
 # Play 3 : Create AMI from this image
 # -----------------------------------
+- name: Create BASE AMI
+  hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - "group_vars/vars.yml"
 
-
+  tasks:
+  - ec2_ami:
+     instance_id: "{{ temp_ec2.instances[0]['id'] }}" 
+     wait: yes
+     name: "{{ resource_name }}"
+     region: "{{ region }}"
+     tags:
+      Name: "{{ resource_name }}"
+    register: image
+    
+  - name: display AMI Details
+    debug: msg="Newly created AMI ID is {{ image.image_id }}"
 
