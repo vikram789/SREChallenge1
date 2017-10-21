@@ -15,29 +15,26 @@
      image: "{{ ec2_image_bare }}"
      ec2_region: "{{ region }}"
      wait: yes
-     instance_tags: "{{ instance_tags  }}"
+     instance_tags: "{{ AMI_instance_tags  }}"
      group_id: [ "{{ sg_1 }}", "{{ sg_2 }}" ]
      vpc_subnet_id: "{{ ec2_subnet_ids }}"
      assign_public_ip: yes
      exact_count: 1
      count_tag:
-      Name: "{{ resource_name }}"
+      Name: "{{ resource_name_AMI }}"
 #    register: temp_ec2
 # Added this section so that rerunning failed attempt works without duplicating
   - name: Search ec2
     ec2_remote_facts:
      filters:
-      "tag:Name": "{{resource_name}}"
+      "tag:Name": "{{resource_name_AMI}}"
      region: "{{ region }}"
     register: temp_ec2    
 
   - name: display ec2
     debug: msg="Newly created ec2 - {{ temp_ec2.instances[0]['private_ip_address'] }}"
 
-#  - pause: seconds=120
-
-#  - name: Wait for SSH to come up on " {{ temp_ec2.instances[0]['private_ip'] }} "
-#    wait_for: host= "{{ temp_ec2.instances[0]['private_ip'] }}" port=22 delay=60 timeout=320 state=started
+  - pause: seconds=150
 
   - name: Add all instance private  IPs to host group
     add_host: name="{{ temp_ec2.instances[0]['private_ip_address'] }}" groups=webserver
@@ -72,12 +69,27 @@
   - ec2_ami:
      instance_id: "{{ temp_ec2.instances[0]['id'] }}" 
      wait: yes
-     name: "{{ resource_name }}"
+     name: "{{ resource_name_AMI }}"
      region: "{{ region }}"
      tags:
-      Name: "{{ resource_name }}"
+      Name: "{{ resource_name_AMI }}"
     register: image
     
   - name: display AMI Details
     debug: msg="Newly created AMI ID is {{ image.image_id }}"
 
+#----------------------------------------------------------------------
+#Play 4 : Terminate the EC2 Instnce created for AMI Creation purpose
+#-----------------------------------------------------------------------
+- name: Terminate instances
+  hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - "group_vars/vars.yml"
+
+  tasks:
+    - name: Terminate instances that were previously launched
+      ec2:
+        state: 'absent'
+        region: "{{ region }}"
+        instance_ids: "{{ temp_ec2.instances[0]['id'] }}" 

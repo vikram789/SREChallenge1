@@ -3,13 +3,25 @@
 ### Defines the tags for EC2 Instance
 Owner: "Vikram@gmail.com"
 Manager: "Dave@c.com"
+# Modify below fo each release
 env: DEV_WebServer_R1
 resource_name: "{{ env }}"
+resource_name_AMI: DEV_WebServer_R1_AMI
+
+
+# Change this every 3 months with latest IT provided Image
+ec2_image_bare: ami-faea3480
+
+# Change below  everytime you create BASE Image
+ec2_image: ami-b000deca
+
+#-------
+## DONOT Modify below entries
+##------
 
 # Subnet, network, vpc, settings.
 ec2_instance_type: t2.micro
 ec2_subnet_ids: subnet-c209f58a
-ec2_image_bare: ami-faea3480
 
 
 # Security Groupsg_1
@@ -29,6 +41,13 @@ instance_tags: { "Name": "{{ resource_name }}",
                  "Manager": "{{ Manager }}",
                  "Owner": "{{ Owner }}",
                 }
+
+AMI_instance_tags: { "Name": "{{ resource_name_AMI }}",
+                 "Env": "{{ env }}",
+                 "Manager": "{{ Manager }}",
+                 "Owner": "{{ Owner }}",
+                }
+
 # region
 region: us-east-1
 
