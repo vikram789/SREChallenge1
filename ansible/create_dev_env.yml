@@ -65,7 +65,8 @@
        - dev-lb 
      region: "{{ region }}"
      vpc_zone_identifier: "{{ ec2_subnet_ids }}"
-     tags: 
-      -"Name":DEV_WebServer_R1_ASG
+     tags:{
+       "Name":"DEV_WebServer_R1_ASG"
+     }
 
 
