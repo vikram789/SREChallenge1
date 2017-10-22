@@ -6,13 +6,25 @@
     - "group_vars/vars.yml"
 
   tasks:
+  - name: Find the latest base AMI
+    ec2_ami_find:
+     owner: self
+     ami_tags:
+      Name: "{{ base_ami_type }}*"
+#Type: "{{ base_ami_type }}*"
+     no_result_action: fail
+     region: "{{ region }}"
+     sort: creationDate
+     sort_order: descending
+     sort_end: 1
+    register: ami_find
 
   - ec2_elb_lb:
      name: dev-lb
      state: present
      region: "{{ region }}"
      zones:
-      - us-east-1a
+      - us-east-1c
      listeners:
       - protocol: http # options are http, https, ssl, tcp
         load_balancer_port: 80
@@ -28,7 +40,7 @@
   - name: Create Launch Configuration
     ec2_lc:
      name: dev_lc
-     image_id: "{{ ec2_image }}"
+     image_id: "{{ ami_find.results[0].ami_id }}"
 #    key_name: mykey
      region: "{{ region }}"
      security_groups: "{{ sg_1 }}"

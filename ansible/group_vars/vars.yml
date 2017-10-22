@@ -6,14 +6,15 @@ Manager: "Dave@c.com"
 # Modify below fo each release
 env: DEV_WebServer_R1
 resource_name: "{{ env }}"
-resource_name_AMI: DEV_WebServer_R1_AMI
+base_ami_type: "{{ env }}_AMI"
+resource_name_AMI: "{{ env }}_AMI-{{ timestamp }}"
 
 
 # Change this every 3 months with latest IT provided Image
 ec2_image_bare: ami-faea3480
 
 # Change below  everytime you create BASE Image
-ec2_image: ami-b000deca
+# Not needed as this is now dynamic. ec2_image: ami-1c3ae466
 
 #-------
 ## DONOT Modify below entries
@@ -32,7 +33,7 @@ sg_2: sg-af4c50d0
 vpc_id: vpc-4bad8c2d
 
 # availability zones
-availability_zone_1: us-east-1a
+availability_zone_1: us-east-1c    # Not used anywhere
 
 
 

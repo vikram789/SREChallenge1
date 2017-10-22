@@ -8,6 +8,9 @@
   vars_files:
     - "group_vars/vars.yml"
 
+  pre_tasks:
+  - set_fact:
+        timestamp: "{{lookup('pipe','date +%Y%m%d%H%M%S')}}"
   tasks:
   - name: Create Base EC2 Instance
     ec2:
@@ -15,7 +18,7 @@
      image: "{{ ec2_image_bare }}"
      ec2_region: "{{ region }}"
      wait: yes
-     instance_tags: "{{ AMI_instance_tags  }}"
+     instance_tags: "{{ AMI_instance_tags }}"
      group_id: [ "{{ sg_1 }}", "{{ sg_2 }}" ]
      vpc_subnet_id: "{{ ec2_subnet_ids }}"
      assign_public_ip: yes
@@ -24,6 +27,7 @@
       Name: "{{ resource_name_AMI }}"
 #    register: temp_ec2
 # Added this section so that rerunning failed attempt works without duplicating
+# Not applicable since I added a timestamp variable.
   - name: Search ec2
     ec2_remote_facts:
      filters:
@@ -73,6 +77,7 @@
      region: "{{ region }}"
      tags:
       Name: "{{ resource_name_AMI }}"
+      Type: "{{ base_ami_type }}"
     register: image
     
   - name: display AMI Details
