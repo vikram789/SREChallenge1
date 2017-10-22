@@ -1,6 +1,6 @@
 ---
 # ---------------------------------
-# PLAY 1 - create EC2 with base AMI
+# PLAY 1 - create EC2 with Base  AMI
 # ---------------------------------
 - name: Create Base AMI
   hosts: localhost
@@ -12,75 +12,79 @@
   - set_fact:
         timestamp: "{{lookup('pipe','date +%Y%m%d%H%M%S')}}"
   tasks:
-  - name: Create Base EC2 Instance
+  - name: Find the latest base AMI
+    ec2_ami_find:
+     owner: self
+     ami_tags:
+      Name: "{{ base_ami_type }}*"
+     no_result_action: fail
+     region: "{{ region }}"
+     sort: creationDate
+     sort_order: descending
+     sort_end: 1
+    register: ami_find
+
+  - name: Create EC2 Instance
     ec2:
      instance_type: "{{ ec2_instance_type }}"
-     image: "{{ ec2_image_bare }}"
+     image: "{{ ami_find.results[0].ami_id }}"
      ec2_region: "{{ region }}"
      wait: yes
-     instance_tags: "{{ AMI_instance_tags }}"
+     instance_tags: "{{ CI_instance_tags }}"
      group_id: [ "{{ sg_1 }}", "{{ sg_2 }}" ]
      vpc_subnet_id: "{{ ec2_subnet_ids }}"
      assign_public_ip: yes
      exact_count: 1
      count_tag:
-      Name: "{{ resource_name_AMI }}"
-#    register: temp_ec2
-# Added this section so that rerunning failed attempt works without duplicating
-# Not applicable since I added a timestamp variable.
-  - name: Search ec2
-    ec2_remote_facts:
-     filters:
-      "tag:Name": "{{resource_name_AMI}}"
-     region: "{{ region }}"
-    register: temp_ec2    
-
-  - name: display ec2
-    debug: msg="Newly created ec2 - {{ temp_ec2.instances[0]['private_ip_address'] }}"
+      Name: "{{ resource_name_CI }}"
+    register: temp_ec2
 
   - pause: seconds=150
 
-  - name: Add all instance private  IPs to host group
-    add_host: name="{{ temp_ec2.instances[0]['private_ip_address'] }}" groups=webserver
+  - name: Create/Update LoadBalancer
+    ec2_elb_lb:
+     name: CI-LB
+     state: present
+     region: "{{ region }}"
+     zones:
+      - us-east-1c
+     instance_ids:
+      - "{{ temp_ec2.instance_ids[0] }}"
+     purge_instance_ids: true
+     listeners:
+      - protocol: http # options are http, https, ssl, tcp
+        load_balancer_port: 80
+        instance_port: 80
+        proxy_protocol: True
+      - protocol: https
+        load_balancer_port: 443
+        instance_protocol: http # optional, defaults to value of protocol setting
+        instance_port: 80
+        # ssl certificate required for https or ssl
+        ssl_certificate_id: "arn:aws:acm:us-east-1:862454798140:certificate/e1382f43-236d-4524-afb4-f65347f9097e"
 
-# --------------------------------
-# Play 2 - install pre-reqs to EC2
-# -------------------------------
-- name: install Pre-req
+  - name: Add all instance private  IPs to host group
+    add_host: name="{{ temp_ec2.instances[0]['private_ip'] }}" groups=webserver
+
+#-----------------------
+## Play2 --- Deployment 
+##---------------------
+
+- name: Deploy Code
   hosts: webserver
   become: true
   tasks:
-  - name: install the latest version of Apache
-    yum: name=httpd.x86_64 state=latest
+  - name: Code Deployment
+    copy:
+     src: ../src/index.html
+     dest: /var/www/html
+     owner: root
+     group: root
 
-  - name: start the httpd service
-    service: name=httpd state=started enabled=yes
-
-  - name: Create user
-    user: name=vsaraf00c group=ec2-user
-
-#----------
-# Adding http to https conversion
-# ---------
-#
-  - name: Add parameters to httpd.conf to convert http to https
-    lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^RewriteEngine " line="RewriteEngine On" state=present
-    notify: restart apache
-
-  - lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^RewriteCond " line="RewriteCond %{HTTP:X-Forwarded-Proto} =http" state=present
-    notify: restart apache
-
-  - lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^RewriteRule " line="RewriteRule . https://%{HTTP:Host}%{REQUEST_URI} [L,R=permanent]" state=present
-    notify: restart apache
-
-  handlers:
-  - name: restart apache
-    service: name=httpd state=restarted
- 
-#------------------------------------
-# Play 3 : Create Component AMI from this image
-# -----------------------------------
-- name: Create Component AMI
+#-----------------------------
+#  Play3 - Create Component AMI
+#  ----------------------------
+- name:  Create Component AMI
   hosts: localhost
   gather_facts: yes
   vars_files:
@@ -88,30 +92,15 @@
 
   tasks:
   - ec2_ami:
-     instance_id: "{{ temp_ec2.instances[0]['id'] }}" 
+     instance_id: "{{ temp_ec2.instance_ids[0] }}"
      wait: yes
-     name: "{{ resource_name_AMI }}"
+     name: "{{ resource_name_CI }}"
      region: "{{ region }}"
      tags:
-      Name: "{{ resource_name_AMI }}"
+      Name: "{{ resource_name_CI }}"
       Type: "{{ base_ami_type }}"
     register: image
-    
+
   - name: display AMI Details
     debug: msg="Newly created AMI ID is {{ image.image_id }}"
 
-#----------------------------------------------------------------------
-#Play 4 : Terminate the EC2 Instnce created for AMI Creation purpose
-#-----------------------------------------------------------------------
-- name: Terminate instances
-  hosts: localhost
-  gather_facts: yes
-  vars_files:
-    - "group_vars/vars.yml"
-
-  tasks:
-    - name: Terminate instances that were previously launched
-      ec2:
-        state: 'absent'
-        region: "{{ region }}"
-        instance_ids: "{{ temp_ec2.instances[0]['id'] }}" 

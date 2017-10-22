@@ -2,21 +2,16 @@ node('ansible') {
     stage('checkout code') {
         git url: 'https://github.com/vikram789/SREChallenge1.git'
     }
-    stage('Build and Compile') {
-        sh "sed 's/BUILD/${env.BUILD_NUMBER}/' src/index.html"
-        echo env.BUILD_NUMBER
-    }
-    stage('Sonar Validation') {
-        echo "Sonar code goes here"
-    }
-    stage('Build-Deploy-CI-Env') {
-         try{
+    stage('Create-Component-AMI') {
+        try{
             sh ". /home/ec2-user/.bash_profile; ansible-playbook -v ansible/component_ami_setup.yml"
         }
         catch (exc){
             echo "Something failed..!!"
             currentBuild.result = 'FAILURE'
-        }  
+        } 
+        finally {
+            echo "Deployment may have failed" 
+                 }
     }
 }
-
