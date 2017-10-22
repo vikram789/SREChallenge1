@@ -3,7 +3,7 @@ node('ansible') {
         git url: 'https://github.com/vikram789/SREChallenge1.git'
     }
     stage('Build and Compile') {
-        sh "sed 's/BUILD/${env.BUILD_NUMBER}/' src/index.html"
+        sh "sed -i 's/BUILD/${env.BUILD_NUMBER}/' src/index.html"
         echo env.BUILD_NUMBER
     }
     stage('Sonar Validation') {
