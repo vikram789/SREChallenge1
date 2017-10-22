@@ -4,7 +4,7 @@ node('ansible') {
     }
     stage('Create-Component-AMI') {
         try{
-            sh ". /home/ec2-user/.bash_profile; ansible-playbook -v ansible/base_ami_setup.yml"
+            sh ". /home/ec2-user/.bash_profile; ansible-playbook -v ansible/component_ami_setup.yml"
         }
         catch (exc){
             echo "Something failed..!!"
