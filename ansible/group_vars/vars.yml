@@ -8,6 +8,7 @@ env: DEV_WebServer_R1
 resource_name: "{{ env }}"
 base_ami_type: "{{ env }}_AMI"
 resource_name_AMI: "{{ env }}_AMI-{{ timestamp }}"
+resource_name_CI: "{{ env }}_CI-{{ timestamp }}"
 
 
 # Change this every 3 months with latest IT provided Image
@@ -48,6 +49,13 @@ AMI_instance_tags: { "Name": "{{ resource_name_AMI }}",
                  "Manager": "{{ Manager }}",
                  "Owner": "{{ Owner }}",
                 }
+
+CI_instance_tags: { "Name": "{{ resource_name_CI }}",
+                 "Env": "{{ env }}",
+                 "Manager": "{{ Manager }}",
+                 "Owner": "{{ Owner }}",
+                }
+
 
 # region
 region: us-east-1

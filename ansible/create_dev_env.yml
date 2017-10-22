@@ -14,7 +14,7 @@
     ec2_ami_find:
      owner: self
      ami_tags:
-      Name: "{{ base_ami_type }}*"
+      Name: "{{ resource_name }}_CI*"
 #Type: "{{ base_ami_type }}*"
      no_result_action: fail
      region: "{{ region }}"
@@ -67,6 +67,6 @@
      vpc_zone_identifier: "{{ ec2_subnet_ids }}"
      tags:
        - "Name": "{{ env }}-ASG"
-#DEV_WebServer_R1_ASG
+
 
 

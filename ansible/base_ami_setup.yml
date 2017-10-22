@@ -1,6 +1,6 @@
 ---
 # ---------------------------------
-# PLAY 1 - create EC2 with base AMI
+# PLAY 1 - create EC2 with IT Provided  AMI
 # ---------------------------------
 - name: Create Base AMI
   hosts: localhost
@@ -78,9 +78,9 @@
     service: name=httpd state=restarted
  
 #------------------------------------
-# Play 3 : Create Component AMI from this image
+# Play 3 : Create Base AMI from this image
 # -----------------------------------
-- name: Create Component AMI
+- name: Create Base AMI
   hosts: localhost
   gather_facts: yes
   vars_files:
