@@ -66,6 +66,6 @@
      region: "{{ region }}"
      vpc_zone_identifier: "{{ ec2_subnet_ids }}"
      tags:
-       Name: "{{ resource_name }}_ASG"
+       Name: "{{ resource_name }}"
 
 
