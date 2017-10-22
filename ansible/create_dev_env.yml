@@ -65,7 +65,6 @@
        - dev-lb 
      region: "{{ region }}"
      vpc_zone_identifier: "{{ ec2_subnet_ids }}"
-     tags:
-       Name: "{{ resource_name }}"
+     tags: "{{ instance_tags }}"
 
 
