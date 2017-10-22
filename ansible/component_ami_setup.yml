@@ -78,9 +78,9 @@
     service: name=httpd state=restarted
  
 #------------------------------------
-# Play 3 : Create AMI from this image
+# Play 3 : Create Component AMI from this image
 # -----------------------------------
-- name: Create BASE AMI
+- name: Create Component AMI
   hosts: localhost
   gather_facts: yes
   vars_files:
