@@ -59,7 +59,24 @@
   - name: Create user
     user: name=vsaraf00c group=ec2-user
 
+#----------
+# Adding http to https conversion
+# ---------
+#
+  - name: Add parameters to httpd.conf to convert http to https
+    lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^RewriteEngine " line="RewriteEngine On" state=present
+    notify: restart apache
 
+  - lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^RewriteCond " line="RewriteCond %{HTTP:X-Forwarded-Proto} =http" state=present
+    notify: restart apache
+
+  - lineinfile: dest=/etc/httpd/conf/httpd.conf regexp="^RewriteRule " line="RewriteRule . https://%{HTTP:Host}%{REQUEST_URI} [L,R=permanent]" state=present
+    notify: restart apache
+
+  handlers:
+  - name: restart apache
+    service: name=httpd state=restarted
+ 
 #------------------------------------
 # Play 3 : Create AMI from this image
 # -----------------------------------

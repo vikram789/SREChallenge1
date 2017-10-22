@@ -4,6 +4,10 @@
   gather_facts: yes
   vars_files:
     - "group_vars/vars.yml"
+  
+  pre_tasks:
+  - set_fact:
+       timestamp: "{{lookup('pipe','date +%Y%m%d%H%M%S')}}"
 
   tasks:
   - name: Find the latest base AMI
@@ -39,7 +43,7 @@
  
   - name: Create Launch Configuration
     ec2_lc:
-     name: dev_lc
+     name: "dev_lc-{{ timestamp }}"
      image_id: "{{ ami_find.results[0].ami_id }}"
 #    key_name: mykey
      region: "{{ region }}"
@@ -50,7 +54,7 @@
   - name: Create Auto Scaling Group
     ec2_asg:
      name: dev_asg
-     launch_config_name: dev_lc
+     launch_config_name: "dev_lc-{{ timestamp }}"
      health_check_period: 60
      health_check_type: ELB
      replace_all_instances: yes
@@ -61,4 +65,7 @@
        - dev-lb 
      region: "{{ region }}"
      vpc_zone_identifier: "{{ ec2_subnet_ids }}"
+     tags:
+       Name: "{{ resource_name }}_ASG"
+
 
