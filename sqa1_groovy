@@ -1,0 +1,177 @@
+node ('VZW.POS.ODDBUILD.SERVER')  {
+def retail_host = "  "
+
+
+def ENV = "SQA1"
+
+def branches = [:]
+
+println Channels 
+def values = Channels.split(',')  
+for(i=0;i<values.size();i++)
+{
+ switch(values[i]) {
+	 case "B2B": 
+	    branches["B2B"] = {	stage("B2B") { 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-b2b ${Release_OMNI} poscomm1" 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/deployStatic.sh ${Angular_Release} vzw_b2b"
+			} }
+		break
+	 case "CARE": 
+	    branches["CARE"] = {	stage("CARE") { 
+		sh "sleep 45"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-care ${Release_OMNI} poscomm1" 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/deployStatic.sh ${Angular_Release} vzw_care"
+			} }
+		break
+	 case "TELE": 
+	    branches["TELE"] = {	stage("TELE") { 
+		sh "sleep 90"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-telesales ${Release_OMNI} poscomm1" 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/deployStatic.sh ${Angular_Release} vzw_tele"
+			} }
+		break
+	 case "CHAT": 
+	    branches["CHAT"] = {	stage("CHAT") { 
+		sh "sleep 90"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${tele_b2b_care_chat_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-chatstore ${Release_OMNI} poscomm1" 
+			} }
+		break
+	 case "RETAIL": 
+	    branches["RETAIL"] = {	stage("RETAIL") { 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${retail_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-retail ${Release_OMNI} poscomm1" 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${retail_host} /app/scripts/deployStatic.sh ${Angular_Release} vzw_netace"
+			} }
+		break
+	 case "AppProperties": 
+	    branches["AppProps"] = {	stage("AppProps") { 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${appprops_bcc_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-appproperties ${Release_OMNI} poscomm1" 
+			} }
+		break
+	 case "Indirect": 
+	    branches["Indirect"] = {	stage("Indirect") { 
+	    if (Release_OMNI.matches("^1[89].*")) {
+		    println "Deploying latest from accurev build"
+			//sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${indirect_download_host} /vzwhome/weblogic/AdminScripts/copyindirectcodetosqa1.sh atg-indirect ${Release_OMNI}"
+			sh "/u01/build/INDIRECT/copyindirectcodetosqa1.sh atg-indirect ${Release_OMNI}"
+		}
+		
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${indirect_onprem_host} /vzwhome/weblogic/AdminScripts/deploy_omni_new.sh atg-indirect uat1" 
+			} }
+		break
+	case "Indirect-aws": 
+	    branches["Indirect-aws"] = {	stage("Indirect-aws") { 
+	    println "Deploying latest from accurev build"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${indirect_aws_host} /app/scripts/posenv/autodeploy/deploy_omni_new.sh atg-indirect ${Release_OMNI} uat1" 
+			} }
+		break
+	 case "EAI-aws-east": 
+	    branches["EAI-aws-east"] = {	stage("EAI-aws-east") { 
+		sh "sleep 60"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_east_aws_host} /app/scripts/posenv/autodeploy/bin/autodeploy_eaisch.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "EAI-aws-west": 
+	    branches["EAI-aws-west"] = {	stage("EAI-aws-west") { 
+		sh "sleep 60"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_west_aws_host} /app/scripts/posenv/autodeploy/bin/autodeploy_eaisch.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "EAI-on-prem-east": 
+	    branches["EAI-on-prem-east"] = {	stage("EAI-on-prem-east") { 
+		sh "sleep 60"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_east_onprem_host} /app/scripts/autodeploy_eaisch.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "EAI-on-prem-west": 
+	    branches["EAI-on-prem-west"] = {	stage("EAI-on-prem-west") { 
+		sh "sleep 60"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_west_onprem_host} /app/scripts/autodeploy_eaisch.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "VIP-aws-east": 
+	    branches["VIP-aws-east"] = {	stage("VIP-aws-east") { 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_east_aws_host} /app/scripts/posenv/autodeploy/bin/autodeploy_vipsvcs.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "VIP-aws-west": 
+	    branches["VIP-aws-west"] = {	stage("VIP-aws-west") { 
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_west_aws_host} /app/scripts/posenv/autodeploy/bin/autodeploy_vipsvcs.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "VIP-on-prem-east": 
+	    branches["VIP-on-prem-east"] = {	stage("VIP-on-prem-east") { 
+		// sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_east_onprem_host} /app/scripts/autodeploy_vipsvcs.sh ${Release_VIP_EAI}"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_east_onprem_host} /app/scripts/deploy_gz_vipsvc_active_inactive.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "VIP-on-prem-west": 
+	    branches["VIP-on-prem-west"] = {	stage("VIP-on-prem-west") { 
+		// sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_west_onprem_host} /app/scripts/autodeploy_vipsvcs.sh ${Release_VIP_EAI}"
+		  sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_gz_west_onprem_host} /app/scripts/deploy_gz_vipsvc_active_inactive.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "VIP-East-YZ": 
+	    branches["VIP-East-YZ"] = {	stage("VIP-East-YZ") { 
+		sh "sleep 350"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_yz_east_onprem_host} /app/scripts/autodeploy_vipsvc-yz-active-inactive.sh" 
+			} }
+		break
+	 case "VIP-West-YZ": 
+	    branches["VIP-West-YZ"] = {	stage("VIP-West-YZ") { 
+		sh "sleep 350"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_yz_west_onprem_host} /app/scripts/autodeploy_vipsvc-yz-active-inactive.sh" 
+			} }
+		break
+	 case "EAI-East-YZ": 
+	    branches["EAI-East-YZ"] = {	stage("EAI-East-YZ") { 
+		sh "sleep 200"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_yz_east_onprem_host} /app/scripts/autodeploy_eai-yz.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 case "EAI-West-YZ": 
+	    branches["EAI-West-YZ"] = {	stage("EAI-West-YZ") { 
+		sh "sleep 200"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${vip_eai_yz_west_onprem_host} /app/scripts/autodeploy_eai-yz.sh ${Release_VIP_EAI}" 
+			} }
+		break
+	 default:
+        println  "Invalid Arguments.. !!"	
+		break
+ }
+}
+parallel branches
+
+def GZ="B2B TELE RETAIL CHAT GZ-Static"
+for(i=0;i<values.size();i++)
+{
+ if (GZ.contains(values[i]))
+ {
+	 stage("GZ-Static") { 
+		println "############ This is green Zone static deployment #########" 
+		sh "cd /u01/build/smartUI; ./buildProdPackage-gz.sh ${Angular_Release} ${ENV}"
+		sh "cd /u01/build/smartUI/ENV/${ENV}; scp prod-gz.zip weblogic@${omni_gz_webserver}:/app/vzw/htdocs"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${omni_gz_webserver} /app/vzw/htdocs/deploy.sh "
+			}
+	break
+}}
+for(i=0;i<values.size();i++)
+{
+ if (values[i] == "Indirect" || values[i] == "Indirect-aws" || values[i] == "YZ-Static" )
+ {
+	 stage("Indirect-Static") { 
+		println "############### This is INDIRECT  static deployment" 
+		sh "cd /u01/build/smartUI; ./buildProdPackage-yz.sh ${Angular_Release} ${ENV}"
+		sh "cd /u01/build/smartUI/ENV-yz/${ENV}; scp prod-yz.zip weblogic@${indirect_webserver}:/app/vzw/htdocs/sqa1"
+		sh "/usr/bin/ssh -i /u01/posatgap/scmspace/weblogic_key -o StrictHostKeyChecking=no weblogic@${indirect_webserver} /app/vzw/htdocs/sqa1/deploy.sh "
+			}
+	break
+}}
+}
+// calling Onejenkins job to publish hygieia results
+node ('tpalscj4va002.ebiz.verizon.com')  {
+    
+  sh 'curl -X POST "https://balasve:71b1fda26e8435fd1ecd51bb1efd5a99@onejenkins.verizon.com/vz/job/VZW.WPSG.OMIN-RETAIL.DEPLOYMENT.TEST/buildWithParameters?token=autodevops&version=${Release}&envName=SQA1"'
+    
+}
+
