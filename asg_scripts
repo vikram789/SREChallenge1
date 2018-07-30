@@ -1,0 +1,136 @@
+
+####### asgRetail.py
+#!/usr/bin/env python
+
+import boto3
+import os,sys
+
+os.environ["HTTP_PROXY"] = 'http://proxy:80'
+os.environ["HTTPS_PROXY"] = 'http://proxy:80'
+os.environ['NO_PROXY'] = '169.254.169.254'
+
+
+region='us-east-1'
+ec2 = boto3.resource('ec2',region_name=region)
+
+def get_instances(asgName):
+    client = boto3.client('autoscaling',region_name=region)
+    mypaginator = client.get_paginator('describe_auto_scaling_groups')
+    groups = mypaginator.paginate().build_full_result()
+
+    for asg in groups['AutoScalingGroups']:
+        if asg['AutoScalingGroupName'] == asgName :
+           instances_all = [ i['InstanceId']+" "+str(i['ProtectedFromScaleIn']) for i in asg['Instances'] if i['ProtectedFromScaleIn'] ]
+           #print instances_all
+
+           if len(instances_all) == 0 :
+               print 'None'
+               return
+           else:
+               for index,instance in enumerate(instances_all):
+                   get_id = [ instance.split(" ")[0]]
+                   running_instances = ec2.instances.filter(InstanceIds=get_id)
+                   print list(running_instances)[0].private_ip_address
+                   return
+
+                   #if instance.split(" ")[1] :
+                   #    print list(running_instances)[0].id,list(running_instances)[0].private_ip_address,instance.split(" ")[1]
+
+if __name__ == '__main__':
+
+    if len(sys.argv) > 0:
+        try:
+            asgName=sys.argv[1]
+        except Exception, e:
+            print ("\nUsage Exception: {}".format(str(e)))
+
+    get_instances(asgName)
+
+
+######## asgRetail.py
+#!/usr/bin/env python
+
+import boto3
+import os,sys
+
+os.environ["HTTP_PROXY"] = 'http://proxy:80'
+os.environ["HTTPS_PROXY"] = 'http://proxy:80'
+os.environ['NO_PROXY'] = '169.254.169.254'
+
+
+region='us-east-1'
+ec2 = boto3.resource('ec2',region_name=region)
+
+def get_instances(asgName):
+    client = boto3.client('autoscaling',region_name=region)
+    mypaginator = client.get_paginator('describe_auto_scaling_groups')
+    groups = mypaginator.paginate().build_full_result()
+
+    for asg in groups['AutoScalingGroups']:
+        if asg['AutoScalingGroupName'] == asgName :
+           instances_all = [ i['InstanceId']+" "+str(i['ProtectedFromScaleIn']) for i in asg['Instances'] if i['ProtectedFromScaleIn'] ]
+           #print instances_all
+
+           if len(instances_all) == 0 :
+               print 'None'
+               return
+           else:
+               for index,instance in enumerate(instances_all):
+                   get_id = [ instance.split(" ")[0]]
+                   running_instances = ec2.instances.filter(InstanceIds=get_id)
+                   print list(running_instances)[0].private_ip_address
+                   return
+
+                   #if instance.split(" ")[1] :
+                   #    print list(running_instances)[0].id,list(running_instances)[0].private_ip_address,instance.split(" ")[1]
+
+if __name__ == '__main__':
+
+    if len(sys.argv) > 0:
+        try:
+            asgName=sys.argv[1]
+        except Exception, e:
+            print ("\nUsage Exception: {}".format(str(e)))
+
+    get_instances(asgName)
+
+[weblogic@ scripts]$ cat wrapInitialDeploy.sh
+#! /bin/bash
+
+asg_out=$(/app/scripts/asgRetail.py POS-ENV-ASG-SQA5-ATG-RETAIL)
+myIp=$(ip addr show | grep -w inet | grep -v '127.0.0.1'| ip addr show | grep -w inet | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1)
+
+/bin/rm -f /var/tmp/iammaster > /dev/null 2>&1
+
+        if [[ "$asg_out" == 'None' ]]; then
+                printf " Master ec2 is not identified...exiting!!"
+                exit 11
+        elif [[ "$asg_out" == "$myIp" ]]; then
+                echo "On same box as protection enabled asg ip-- ignoring deployment"
+                #/vzwhome/weblogic/.logmonitor/logmonitor.iammaster > /dev/null 2>&1
+                /bin/touch /var/tmp/iammaster
+        else
+        printf $asg_out
+                rsync -e "ssh -o StrictHostKeyChecking=no" -aiO weblogic@${asg_out}:/app/scripts/posenv/autodeploy/deploy_omni_new.sh_ASG /app/scripts/posenv/autodeploy
+                /app/scripts/posenv/autodeploy/deploy_omni_new.sh_ASG $asg_out > /app/scripts/posenv/autodeploy/logs/poscomm1_OMNI_ASG.out
+fi
+
+
+[weblogic@ scripts]$ cat scaledown.sh
+
+#!/bin/ksh
+
+SCRIPTS_HOME=/app/scripts
+
+REGION="us-east-1"
+MAX="6"
+MIN="1"
+DESIRED="1"
+ASG_NAME="POS-ENV-ASG-SQA5-ATG-RETAIL"
+
+
+#
+# start from here
+#
+
+${SCRIPTS_HOME}/asgScaling.py ${REGION} ${MIN} ${MAX} ${DESIRED} ${ASG_NAME}
