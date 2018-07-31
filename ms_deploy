@@ -1,0 +1,43 @@
+#!/bin/python
+
+import csv
+import paramiko
+
+servers = {
+      "MS1" : "iaas@10.119.7.210",
+      "MS2" : "iaas@10.119.0.160",
+      "MS3" : "iaas@10.119.4.9",
+      "MS4" : "iaas@10.119.8.80"
+}
+
+
+with open('SQA1.csv') as csvfile:
+    readCSV = csv.reader(csvfile, delimiter=',')
+    for row in readCSV:
+        if row[1] != "YES":
+            print("Skipping '%s'" % row[0])
+        else:
+            #print("Deploying '%s'" % row[0])
+            for i in range(3,len(row)):
+                if row[i][0:2] == "MS":
+                   print("Deploying %s on %s host with Branch %s" %(row[0],row[i],row[2]))
+
+ssh_client = paramiko.SSHClient()
+ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh_client.connect(hostname='10.119.4.9',username='sarafvi',password='Leohyax13')
+stdin,stdout,stderr=ssh_client.exec_command("ls")
+print stdout.readlines()
+print stderr.readlines()
+
+
+
+[sarafvi@10-119-14-60 msdeploy]$ cat SQA1.csv
+onevz-address-service,YES,18.8.300,MS1,MS2
+onevz-appointment-service,YES,18.8.300,MS1,MS2
+onevz-approval-ms,NO,18.8.300,MS2,
+onevz-browse-ms,YES,18.8.300,MS1,MS2
+onevz-cart-ms,YES,18.8.300,MS1,
+onevz-catalog-change-notifier,YES,18.7.500,MS1,MS2
+onevz-catalog-datamanager,YES,18.8.300,MS2,
+onevz-catalog-datareader,NO,18.8.300,MS1,MS2
+onevz-catalog-refdata,NO,18.8.300,MS1,
